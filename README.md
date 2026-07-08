@@ -1,0 +1,1 @@
+# Nirikshak-IIoT-Predictive-Maintenance
