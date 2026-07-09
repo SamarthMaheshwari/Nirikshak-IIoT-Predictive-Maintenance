@@ -1,7 +1,7 @@
 # Nirikshak: An Industrial IoT Predictive Maintenance System
 
 <p align="center">
-  <img src="Documentation/Block_Diagram.png" width="700">
+  <img src="Documentation/System.png" width="700">
 </p>
 
 ## Overview
