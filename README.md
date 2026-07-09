@@ -1,283 +1,218 @@
-# Nirikshak
+# Nirikshak: An Industrial IoT Predictive Maintenance System
 
-Industrial IoT Predictive Maintenance System
+<p align="center">
+  <img src="Documentation/Block_Diagram.png" width="700">
+</p>
 
----
+## Overview
 
-## Dashboard
+Nirikshak is a low-cost Industrial Internet of Things (IIoT) based Predictive Maintenance System designed for monitoring the health of industrial motors in real time.
 
-![Dashboard](Images/Dashboard2.jpg)
+The system continuously acquires data from multiple sensors using an STM32-based Data Acquisition (DAQ) device. The collected data is transmitted wirelessly through an ESP32 module using the MQTT protocol. A Python-based subscriber stores the incoming data, which is then visualized on a real-time dashboard for monitoring and analysis.
 
----
-
-# Project Overview
-
-Nirikshak is an Industrial Internet of Things (IIoT) Predictive Maintenance System developed for monitoring industrial motors in real time.
-
-The project continuously acquires sensor data from industrial equipment, processes the readings using STM32 firmware, transmits the data wirelessly through ESP32 using MQTT, stores the data on a local server, and visualizes machine health through a modern web dashboard.
-
-The system is designed to help industries reduce downtime, improve maintenance planning, and detect abnormal operating conditions before failures occur.
+This project demonstrates hardware design, embedded firmware development, wireless communication, PCB design, and industrial data acquisition.
 
 ---
 
-# Features
+## Features
 
-- Real-Time Monitoring
-- Predictive Maintenance Framework
-- Industrial IoT Architecture
-- MQTT Communication
-- Live Dashboard
-- Machine Health Monitoring
-- Fault Detection
-- Data Logging
-- Wireless Communication
-- Modular Design
-
----
-
-# Hardware Components
-
-| Component | Purpose |
-|-----------|----------|
-| STM32F103CBT6 | Data Acquisition Unit |
-| ESP32 | WiFi Communication |
-| INA260 | Current & Voltage Measurement |
-| MPU6050 | Vibration Monitoring |
-| Temperature Sensor | Temperature Monitoring |
-| Industrial Motor | Test Equipment |
-
----
-
-# Software Stack
-
-## Programming Languages
-
-- Embedded C
-- C++
-- Python
-- HTML
-- CSS
-- JavaScript
-
-## Tools
-
-- STM32CubeIDE
-- Arduino IDE
-- VS Code
-- MQTT
-- Flask
-- GitHub
+- Real-time industrial motor monitoring
+- Wireless data transmission using MQTT
+- Custom STM32-based DAQ board
+- ESP32 Wi-Fi communication
+- Multi-sensor data acquisition
+- Real-time dashboard visualization
+- Custom PCB designed in EasyEDA
+- Custom 3D enclosure
+- Modular firmware architecture
+- Low-cost and scalable IIoT solution
 
 ---
 
 # System Architecture
 
 ```
+Industrial Motor
+        │
+        ▼
 Sensors
-     │
-     ▼
- STM32 DAQ
-     │
-     ▼
- ESP32 MQTT Publisher
-     │
-     ▼
- MQTT Broker
-     │
-     ▼
- Python Subscriber
-     │
-     ▼
- Database / CSV
-     │
-     ▼
- Flask Dashboard
-     │
-     ▼
- User
+│
+├── MPU6050 (Vibration)
+├── DS18B20 (Temperature)
+├── ZMPT101B (Voltage)
+├── SCT-013 (Current)
+└── Proximity Sensor (RPM)
+        │
+        ▼
+STM32 BlackPill
+(Data Acquisition)
+        │
+UART
+        │
+        ▼
+ESP32 DevKit V1
+        │
+Wi-Fi
+        │
+MQTT
+        │
+Python Subscriber
+        │
+CSV Storage
+        │
+Dashboard
 ```
 
 ---
 
-# Sensor Parameters
+# Hardware
 
-## Temperature
+## Microcontrollers
 
-Measures machine temperature continuously and compares it against predefined safety limits.
+- STM32 BlackPill (STM32F411)
+- ESP32 DevKit V1
 
----
+## Sensors
 
-## Current
-
-Monitors motor current consumption and overload conditions.
-
----
-
-## Voltage
-
-Measures input supply voltage for stability analysis.
+- MPU6050
+- DS18B20
+- ZMPT101B
+- SCT-013 Current Sensor
+- Inductive Proximity Sensor
 
 ---
 
-## Vibration
+# Software Stack
 
-Detects abnormal vibration patterns that may indicate bearing wear, imbalance, or mechanical faults.
-
----
-
-# Workflow
-
-### Step 1
-
-Sensors collect machine data.
-
-↓
-
-### Step 2
-
-STM32 reads all sensor values.
-
-↓
-
-### Step 3
-
-ESP32 sends data through MQTT.
-
-↓
-
-### Step 4
-
-MQTT Broker receives data.
-
-↓
-
-### Step 5
-
-Python subscriber stores data.
-
-↓
-
-### Step 6
-
-Dashboard updates in real time.
-
-↓
-
-### Step 7
-
-Machine health is evaluated.
+| Software | Purpose |
+|----------|---------|
+| Arduino IDE | Firmware Development |
+| EasyEDA | PCB Design |
+| Python | Data Subscriber |
+| MQTT | Communication Protocol |
+| GitHub | Version Control |
 
 ---
 
-# Folder Structure
+# Repository Structure
 
 ```
-Firmware/
-Dashboard/
-Machine_Learning/
-Hardware/
-MQTT/
-Dataset/
-Documents/
-Images/
+Nirikshak
+│
+├── Firmware
+│   ├── STM32
+│   └── ESP32
+│
+├── MQTT
+│   ├── Subscriber_Script
+│   └── MQTT Architecture
+│
+├── PCB
+│   ├── EasyEDA
+│   ├── Layout
+│   └── Schematic
+│
+├── Dashboard
+│
+├── Documentation
+│
+├── 3D_Enclosure
+│
+├── Images
+│
+├── README.md
+└── LICENSE
 ```
 
 ---
 
-# Applications
+# PCB
 
-- Industrial Motor Monitoring
-- Predictive Maintenance
-- Condition Monitoring
-- Factory Automation
-- Smart Manufacturing
-- Industrial IoT
+The DAQ board was designed in EasyEDA.
+
+Features include
+
+- STM32 BlackPill
+- ESP32 Interface
+- Sensor Connectors
+- Power Distribution
+- Compact 2-Layer PCB
+
+---
+
+# Dashboard
+
+The dashboard displays
+
+- Temperature
+- Current
+- Voltage
+- RPM
+- Vibration
+- Live Sensor Data
+
+---
+
+# Communication
+
+```
+STM32
+   │
+UART
+   │
+ESP32
+   │
+Wi-Fi
+   │
+MQTT Broker
+   │
+Python Subscriber
+   │
+CSV Database
+   │
+Dashboard
+```
 
 ---
 
 # Future Improvements
 
-- AI Based Fault Detection
-- Remaining Useful Life Prediction
-- Cloud Integration
-- Mobile Application
-- Email Alerts
-- SMS Notifications
-- Multi-Machine Dashboard
-- Historical Data Analysis
-
----
-
-# Getting Started
-
-## Clone Repository
-
-```
-git clone https://github.com/username/Nirikshak-IIoT-Predictive-Maintenance.git
-```
-
----
-
-## Install Requirements
-
-Python
-
-MQTT Broker
-
-STM32CubeIDE
-
-Arduino IDE
-
----
-
-## Run Dashboard
-
-```
-python app.py
-```
-
----
-
-## Connect STM32
-
-Upload STM32 firmware.
-
----
-
-## Connect ESP32
-
-Upload ESP32 firmware.
-
----
-
-## Start MQTT Broker
-
-Start the MQTT broker.
-
----
-
-## Open Dashboard
-
-Open
-
-```
-http://localhost:5000
-```
-
----
-
-# Project Status
-
-🚧 Under Development
+- Edge AI for fault prediction
+- Machine Learning integration
+- Cloud deployment
+- Mobile application
+- OTA firmware updates
+- Multi-machine monitoring
 
 ---
 
 # Author
 
-**Sam**
+**Samarth Jadhav**
 
-Embedded Systems Engineer
+Electronics & Telecommunication Engineering
 
-Industrial IoT
+Specialization:
+- Embedded Systems
+- Industrial IoT
+- Firmware Development
+- PCB Design
 
-Firmware Development
+GitHub:
+[Samarth Maheshwari](https://github.com/SamarthMaheshwari)
+
+LinkedIn:
+[Samarth Maheshwari](www.linkedin.com/in/samarth-maheshwari-709670259)
+
+---
+
+# Acknowledgements
+
+This project was developed as a Final Year Engineering Project focusing on Industrial IoT and Predictive Maintenance.
+
+---
+
+# License
+
+This project is licensed under the MIT License.
+See the LICENSE file for details.
