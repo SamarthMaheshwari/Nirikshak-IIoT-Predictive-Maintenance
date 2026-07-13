@@ -1,0 +1,31 @@
+{
+  "_comment": "=== NIRIKSHAK — Firebase Realtime Database Rules ===",
+  "_usage": "Paste the 'rules' object below into Firebase Console → Realtime Database → Rules tab",
+
+  "_dev_rules_comment": "USE THIS DURING DEVELOPMENT (open read/write — no auth needed)",
+  "rules_dev": {
+    "rules": {
+      ".read":  true,
+      ".write": true
+    }
+  },
+
+  "_prod_rules_comment": "USE THIS IN PRODUCTION (only authenticated users can write)",
+  "rules_prod": {
+    "rules": {
+      "sensors": {
+        ".read": true,
+        "latest": {
+          ".write": "auth != null"
+        },
+        "history": {
+          ".write": "auth != null"
+        },
+        "config": {
+          ".read": true,
+          ".write": "auth != null"
+        }
+      }
+    }
+  }
+}

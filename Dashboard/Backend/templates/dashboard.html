@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nirikshak — Advanced Predictive Maintenance</title>
+
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- Core Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <style>
+    :root {
+      --font-primary: 'Outfit', sans-serif;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --color-temp: #ff3b30;
+      --color-temp-glow: rgba(255, 59, 48, 0.4);
+      --color-curr: #ff9500;
+      --color-curr-glow: rgba(255, 149, 0, 0.4);
+      --color-volt: #007aff;
+      --color-volt-glow: rgba(0, 122, 255, 0.4);
+      --color-vib: #af52de;
+      --color-vib-glow: rgba(175, 82, 222, 0.4);
+      --color-rpm: #34c759;
+      --color-rpm-glow: rgba(52, 199, 89, 0.4);
+      --color-healthy: #34c759;
+      --color-anomaly: #ff3b30;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-border-hover: rgba(255, 255, 255, 0.18);
+      --glass-blur: blur(20px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background-color: #050202;
+    }
+
+    body {
+      font-family: var(--font-primary);
+      background: radial-gradient(ellipse at 20% 50%, #1a0a0a 0%, #050202 50%, #000 100%);
+      background-attachment: fixed;
+      color: #fff;
+      min-height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+
+    /* ── HEADER ── */
+    header {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 1rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-radius: 0 0 20px 20px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--color-temp), var(--color-vib));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 15px rgba(255, 59, 48, 0.3);
+    }
+
+    .logo-text h1 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, #fff, #a5a5a5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text p {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(52, 199, 89, 0.1);
+      border: 1px solid rgba(52, 199, 89, 0.3);
+      color: var(--color-healthy);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--color-healthy);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--color-healthy);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.8);
+      }
+    }
+
+    .conn-status {
+      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .conn-ok {
+      background: rgba(52, 199, 89, 0.1);
+      color: var(--color-healthy);
+      border: 1px solid rgba(52, 199, 89, 0.3);
+    }
+
+    .conn-err {
+      background: rgba(255, 59, 48, 0.1);
+      color: var(--color-temp);
+      border: 1px solid rgba(255, 59, 48, 0.3);
+    }
+
+    .source-badge {
+      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      background: rgba(0, 122, 255, 0.1);
+      color: var(--color-volt);
+      border: 1px solid rgba(0, 122, 255, 0.3);
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* ── 3D MOTOR LAYOUT STRUCTURE ── */
+    .dashboard-layout-main {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .dashboard-grid-2col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    /* ── CARD SECTIONS ── */
+    .cards-column {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .section-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .section-label-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sensor-section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.2rem;
+    }
+
+    /* RPM card spans full width on last row when 5 items */
+    .sensor-section-grid .card-rpm-full {
+      grid-column: 1 / -1;
+    }
+
+    .ml-section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.2rem;
+    }
+
+    /* Lifespan Estimation spans both ML columns */
+    .ml-section-grid .card-lifespan-full {
+      grid-column: 1 / -1;
+    }
+
+    .motor-sticky-wrap {
+      position: sticky;
+      top: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 140px);
+    }
+
+    .motor-container {
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* ── FLOATING MINI DATA CARDS AROUND MOTOR ── */
+    .motor-data-card {
+      position: absolute;
+      background: rgba(20, 20, 20, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 10px 14px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      z-index: 10;
+      animation: motorDataCardFloat 4s ease-in-out infinite;
+      min-width: 140px;
+    }
+
+    .motor-data-card-label {
+      font-size: 0.62rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+    }
+
+    .motor-data-card-value-wrap {
+      margin-top: 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+
+    .motor-data-card-value {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .motor-data-card-unit {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .motor-data-card-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 5px;
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    .motor-dc-temp {
+      top: 10%;
+      left: -20%;
+      animation-delay: 0s;
+      border-left: 3px solid var(--color-temp);
+    }
+
+    .motor-dc-vib {
+      bottom: 12%;
+      left: -22%;
+      animation-delay: 1.2s;
+      border-left: 3px solid var(--color-vib);
+    }
+
+    .motor-dc-curr {
+      top: 13%;
+      right: -20%;
+      animation-delay: 0.6s;
+      border-left: 3px solid var(--color-curr);
+    }
+
+    .motor-dc-status {
+      bottom: 10%;
+      right: -22%;
+      animation-delay: 1.8s;
+      border-left: 3px solid var(--color-healthy);
+    }
+
+    @keyframes motorDataCardFloat {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    .motor-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .motor-dot-ok {
+      background: var(--color-healthy);
+      box-shadow: 0 0 8px var(--color-healthy);
+    }
+
+    .motor-dot-warn {
+      background: var(--color-warn);
+      box-shadow: 0 0 8px var(--color-warn);
+    }
+
+    .motor-dot-danger {
+      background: var(--color-temp);
+      box-shadow: 0 0 8px var(--color-temp);
+    }
+
+    @media (max-width: 1250px) {
+      .motor-dc-temp {
+        left: -5%;
+      }
+
+      .motor-dc-vib {
+        left: -7%;
+      }
+
+      .motor-dc-curr {
+        right: -5%;
+      }
+
+      .motor-dc-status {
+        right: -7%;
+      }
+    }
+
+    @media (max-width: 992px) {
+      .motor-data-card {
+        display: none;
+      }
+    }
+
+
+    .motor-image {
+      width: 100%;
+      max-width: 480px;
+      object-fit: contain;
+      filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.6));
+      animation: float-motor 4.5s ease-in-out infinite;
+    }
+
+    .motor-glow {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      filter: blur(10px);
+      z-index: -1;
+    }
+
+    @keyframes float-motor {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(0deg);
+        filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.6));
+      }
+
+      50% {
+        transform: translateY(-12px) rotate(1deg);
+        filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.45));
+      }
+    }
+
+    /* ── GLASS CARD CLASS ── */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      padding: 1.5rem;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+      border-radius: 24px;
+      pointer-events: none;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--glass-border-hover);
+      box-shadow: 0 15px 45px 0 rgba(0, 0, 0, 0.75);
+    }
+
+    /* ── DYNAMIC GRADIENT TINTS ── */
+    .card-theme-temp {
+      background: linear-gradient(1deg, rgba(255, 59, 48, 0.35) 0%, rgba(10, 5, 5, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .card-theme-temp:hover {
+      border-color: rgba(255, 59, 48, 0.4);
+      box-shadow: 0 0 25px rgba(255, 59, 48, 0.25), 0 15px 45px 0 rgba(0, 0, 0, 0.75);
+    }
+
+    .card-theme-curr {
+      background: linear-gradient(1deg, rgba(255, 149, 0, 0.35) 0%, rgba(12, 9, 5, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .card-theme-curr:hover {
+      border-color: rgba(255, 149, 0, 0.4);
+      box-shadow: 0 0 25px rgba(255, 149, 0, 0.25), 0 15px 45px 0 rgba(0, 0, 0, 0.75);
+    }
+
+    .card-theme-volt {
+      background: linear-gradient(1deg, rgba(0, 122, 255, 0.35) 0%, rgba(5, 8, 15, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .card-theme-volt:hover {
+      border-color: rgba(0, 122, 255, 0.4);
+      box-shadow: 0 0 25px rgba(0, 122, 255, 0.25), 0 15px 45px 0 rgba(0, 0, 0, 0.75);
+    }
+
+    .card-theme-vib {
+      background: linear-gradient(1deg, rgba(175, 82, 222, 0.35) 0%, rgba(9, 6, 14, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .card-theme-vib:hover {
+      border-color: rgba(175, 82, 222, 0.4);
+      box-shadow: 0 0 25px rgba(175, 82, 222, 0.25), 0 15px 45px 0 rgba(0, 0, 0, 0.75);
+    }
+
+    .card-theme-rpm {
+      background: linear-gradient(1deg, rgba(52, 199, 89, 0.35) 0%, rgba(6, 12, 7, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .card-theme-rpm:hover {
+      border-color: rgba(52, 199, 89, 0.4);
+      box-shadow: 0 0 25px rgba(52, 199, 89, 0.25), 0 15px 45px 0 rgba(0, 0, 0, 0.75);
+    }
+
+    /* Diagnostics gradients (Default fallback) */
+    .diag-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 190px;
+    }
+
+    .diag-card.state-ok {
+      background: linear-gradient(135deg, rgba(52, 199, 89, 0.08) 0%, rgba(6, 12, 7, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .diag-card.state-warn {
+      background: linear-gradient(135deg, rgba(255, 149, 0, 0.08) 0%, rgba(12, 9, 5, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .diag-card.state-fault {
+      background: linear-gradient(135deg, rgba(255, 59, 48, 0.08) 0%, rgba(10, 5, 5, 0.95) 70%, rgba(0, 0, 0, 0.98) 100%);
+    }
+
+    .diag-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* TYPOGRAPHY RATIO SYSTEM */
+    .diag-title,
+    .sc-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.45);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .diag-value,
+    .sc-value {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .sc-unit {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.55);
+      margin-left: 2px;
+      font-weight: 500;
+    }
+
+    .diag-badge,
+    .sc-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+
+    /* BADGE GLOW EFFECTS */
+    .table-badge-ok {
+      background: rgba(52, 199, 89, 0.12);
+      color: var(--color-healthy);
+      border: 1px solid rgba(52, 199, 89, 0.4);
+      box-shadow: 0 0 10px rgba(52, 199, 89, 0.25);
+    }
+
+    .table-badge-warn {
+      background: rgba(255, 149, 0, 0.12);
+      color: var(--color-curr);
+      border: 1px solid rgba(255, 149, 0, 0.4);
+      box-shadow: 0 0 10px rgba(255, 149, 0, 0.25);
+    }
+
+    .table-badge-fault {
+      background: rgba(255, 59, 48, 0.12);
+      color: var(--color-temp);
+      border: 1px solid rgba(255, 59, 48, 0.4);
+      box-shadow: 0 0 10px rgba(255, 59, 48, 0.25);
+    }
+
+    .diag-body {
+      margin: 1rem 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .diag-subtext {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .diag-chart-container {
+      height: 45px;
+      width: 100%;
+      margin-top: auto;
+      overflow: hidden;
+    }
+
+    /* Circular RUL life gauge style */
+    .rul-gauge-container {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      margin-top: 0.5rem;
+    }
+
+    .rul-svg-wrap {
+      width: 60px;
+      height: 60px;
+      position: relative;
+    }
+
+    .rul-pct-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* Interactive Sensor Card Styles */
+    .sensor-card {
+      cursor: pointer;
+      overflow: hidden;
+      min-height: 230px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .sc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sc-body {
+      margin: 0.5rem 0;
+    }
+
+    .sc-val-wrap {
+      display: flex;
+      align-items: baseline;
+    }
+
+    .sc-limit {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 4px;
+    }
+
+    .sc-limit span {
+      font-weight: 600;
+    }
+
+    /* ── CUSTOM MICRO-ANIMATIONS IN SENSORS ── */
+
+    /* 1. Temp: Sinusoid Wave SVG pulse */
+    .temp-pulse-wave {
+      width: 100%;
+      height: 42px;
+      margin-top: 0.5rem;
+    }
+
+    .wave-line-1 {
+      stroke-dasharray: 200;
+      animation: wave-flow-right 5s linear infinite;
+    }
+
+    .wave-line-2 {
+      stroke-dasharray: 200;
+      animation: wave-flow-left 6s linear infinite;
+    }
+
+    @keyframes wave-flow-right {
+      0% {
+        stroke-dashoffset: 200;
+      }
+
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes wave-flow-left {
+      0% {
+        stroke-dashoffset: -200;
+      }
+
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    /* 2. Current: Circular Progress Calories Gauge */
+    .curr-gauge-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      padding: 0 4px;
+    }
+
+    .curr-circle-svg {
+      width: 56px;
+      height: 56px;
+      transform: rotate(-90deg);
+    }
+
+    .curr-circle-bg {
+      stroke: rgba(255, 149, 0, 0.08);
+      stroke-width: 4.5px;
+    }
+
+    .curr-circle-fill {
+      stroke: var(--color-curr);
+      stroke-width: 4.5px;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s ease;
+      filter: drop-shadow(0 0 3px var(--color-curr));
+    }
+
+    .curr-sub-stats {
+      text-align: right;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.45);
+      line-height: 1.4;
+    }
+
+    /* 3. Voltage: Step distance Capsule track tracer */
+    .volt-track-svg {
+      width: 100%;
+      height: 42px;
+      margin-top: 0.5rem;
+    }
+
+    .volt-track-bg {
+      stroke: rgba(0, 122, 255, 0.08);
+      stroke-width: 4px;
+    }
+
+    .volt-tracer-line {
+      stroke: var(--color-volt);
+      stroke-width: 4px;
+      stroke-dasharray: 20 200;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 3px var(--color-volt));
+      animation: tracer-orbit 4s linear infinite;
+    }
+
+    @keyframes tracer-orbit {
+      0% {
+        stroke-dashoffset: 0;
+      }
+
+      100% {
+        stroke-dashoffset: -240;
+      }
+    }
+
+    /* 4. Vibration: Oscillating bar spectrogram */
+    .vib-spectrogram {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+      height: 61px;
+      width: 177px;
+      margin-top: 0.5rem;
+    }
+
+    .vib-bar {
+      flex: 1;
+      width: 6px;
+      background: linear-gradient(to top, rgba(175, 82, 222, 0.2), var(--color-vib));
+      border-radius: 4px;
+      filter: drop-shadow(0 0 3px rgba(175, 82, 222, 0.4));
+      animation: bounce-spectrogram 1.4s ease-in-out infinite alternate;
+      transform-origin: bottom;
+    }
+
+    .vib-bar:nth-child(1) {
+      height: 40%;
+      animation-delay: 0.1s;
+    }
+
+    .vib-bar:nth-child(2) {
+      height: 80%;
+      animation-delay: 0.3s;
+    }
+
+    .vib-bar:nth-child(3) {
+      height: 60%;
+      animation-delay: 0.2s;
+    }
+
+    .vib-bar:nth-child(4) {
+      height: 90%;
+      animation-delay: 0.5s;
+    }
+
+    .vib-bar:nth-child(5) {
+      height: 50%;
+      animation-delay: 0.4s;
+    }
+
+    @keyframes bounce-spectrogram {
+      0% {
+        transform: scaleY(0.3);
+      }
+
+      100% {
+        transform: scaleY(1);
+      }
+    }
+
+    /* 5. Proximity/RPM: Segmented sleep-score progress slider */
+    .rpm-slider-box {
+      margin-top: 0.8rem;
+    }
+
+    .rpm-segments {
+      display: flex;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.05);
+      margin-bottom: 0.4rem;
+    }
+
+    .rpm-seg {
+      height: 100%;
+    }
+
+    .seg-safe {
+      flex: 7;
+      background: rgba(52, 199, 89, 0.4);
+    }
+
+    .seg-warn {
+      flex: 2;
+      background: rgba(255, 149, 0, 0.4);
+    }
+
+    .seg-danger {
+      flex: 1;
+      background: rgba(255, 59, 48, 0.4);
+    }
+
+    .rpm-track-wrap {
+      position: relative;
+      height: 8px;
+    }
+
+    .rpm-thumb-point {
+      position: absolute;
+      top: -2px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 8px #ffffff, 0 0 15px var(--color-rpm);
+      transition: left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* ── ANOMALY DETECTION GRAPH ON DASHBOARD ── */
+    .dashboard-anomaly-chart-card {
+      min-height: 300px;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .chart-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .chart-canvas-wrap {
+      height: 220px;
+      position: relative;
+    }
+
+    /* ── HISTORY LOG AT BOTTOM ── */
+    .history-card {
+      margin-top: 1rem;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .history-count {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+
+    thead th {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 12px 16px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    td {
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    td:first-child {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .table-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      font-family: var(--font-primary);
+    }
+
+    .table-badge-ok {
+      background: rgba(52, 199, 89, 0.1);
+      color: var(--color-healthy);
+      border: 1px solid rgba(52, 199, 89, 0.2);
+    }
+
+    .table-badge-warn {
+      background: rgba(255, 149, 0, 0.1);
+      color: var(--color-curr);
+      border: 1px solid rgba(255, 149, 0, 0.2);
+    }
+
+    .table-badge-fault {
+      background: rgba(255, 59, 48, 0.1);
+      color: var(--color-temp);
+      border: 1px solid rgba(255, 59, 48, 0.2);
+    }
+
+    /* ── INTERACTIVE POPUP MODAL (SPLIT LAYOUT) ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-content {
+      width: 90%;
+      max-width: 960px;
+      height: 520px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      padding: 0;
+      overflow: hidden;
+      border-color: rgba(255, 255, 255, 0.15);
+      animation: modal-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modal-slide-up {
+      0% {
+        transform: translateY(40px) scale(0.96);
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-left {
+      padding: 2.2rem 2rem;
+      border-right: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .modal-right {
+      padding: 2.2rem 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: #ffffff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: rotate(90deg);
+    }
+
+    .m-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .m-title {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .m-sublabel {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .m-val-box {
+      margin: 1.5rem 0;
+    }
+
+    .m-val-title {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.2rem;
+    }
+
+    .m-value {
+      font-family: var(--font-display);
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .m-unit {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .m-stats-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .m-stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.4rem;
+    }
+
+    .m-stat-label {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .m-stat-val {
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    .m-action-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .m-action-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--color-volt);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.3rem;
+    }
+
+    .m-action-desc {
+      font-size: 0.76rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.4;
+    }
+
+    .m-chart-header {
+      margin-bottom: 1rem;
+    }
+
+    .m-chart-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .m-chart-canvas-wrap {
+      flex: 1;
+      position: relative;
+      min-height: 320px;
+    }
+
+    /* ── RESPONSIVE ADAPTATIONS ── */
+    @media (max-width: 992px) {
+      .diagnostics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sensors-row-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .sensors-row-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-content {
+        grid-template-columns: 1fr;
+        height: auto;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-left {
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="logo">
+      <div class="logo-img-wrap" style="width: 44px; height: 44px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(255, 59, 48, 0.2);">
+        <img src="/static/logoo.png" alt="Nirikshak Logo" style="width: 44px; height: 44px; object-fit: cover; border-radius: 12px; mix-blend-mode: screen; display: block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+        <div style="display: none; width: 44px; height: 44px; background: linear-gradient(135deg, var(--color-temp), var(--color-vib)); border-radius: 12px; align-items: center; justify-content: center; font-size: 22px;">⚙️</div>
+      </div>
+      <div class="logo-text">
+        <h1>Nirikshak</h1>
+        <p>Predictive Maintenance · IoT</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="source-badge" id="dataSource">MQTT</span>
+      <span class="conn-status conn-ok" id="connStatus">Connected</span>
+      <span class="source-badge" id="latencyBadge"
+        style="background: rgba(175, 82, 222, 0.1); color: var(--color-vib); border: 1px solid rgba(175, 82, 222, 0.3); display: none;">
+        Latency: <span id="val-latency">--</span> ms (Inference: <span id="val-inference-latency">--</span> ms)
+      </span>
+      <div class="live-badge">
+        <span class="live-dot"></span> Live
+      </div>
+    </div>
+  </header>
+
+  <!-- ── PAGE CONTAINER ── -->
+  <div class="dashboard-container">
+
+    <div class="dashboard-layout-main">
+      <!-- LEFT COLUMN: Two labeled sections -->
+      <div class="cards-column">
+
+        <!-- ── SECTION 1: SENSOR READINGS ── -->
+        <div class="section-block">
+          <div class="section-label">
+            <span class="section-label-dot"
+              style="background: linear-gradient(135deg, var(--color-temp), var(--color-volt));"></span>
+            Sensor Readings
+          </div>
+          <div class="sensor-section-grid">
+
+            <!-- TEMPERATURE (RED) -->
+            <div class="glass-card sensor-card card-theme-temp" onclick="openSensorModal('temperature')">
+              <div class="sc-header">
+                <span class="sc-title">Temperature</span>
+                <span class="sc-badge table-badge-ok" id="badge-temp">OK</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-val-wrap">
+                  <span class="sc-value" id="val-temp">61.8</span>
+                  <span class="sc-unit">°C</span>
+                </div>
+                <div class="sc-limit">Limit: <span style="color:var(--color-temp)">85°C</span></div>
+              </div>
+              <svg class="temp-pulse-wave" viewBox="0 0 100 25">
+                <path class="wave-line-1" d="M0,12.5 Q12.5,2.5 25,12.5 T50,12.5 T75,12.5 T100,12.5" fill="none"
+                  stroke="var(--color-temp)" stroke-width="2" />
+                <path class="wave-line-2" d="M0,12.5 Q12.5,22.5 25,12.5 T50,12.5 T75,12.5 T100,12.5" fill="none"
+                  stroke="rgba(255,59,48,0.2)" stroke-width="1.5" />
+              </svg>
+            </div>
+
+            <!-- CURRENT (ORANGE) -->
+            <div class="glass-card sensor-card card-theme-curr" onclick="openSensorModal('current')">
+              <div class="sc-header">
+                <span class="sc-title">Current</span>
+                <span class="sc-badge table-badge-ok" id="badge-curr">OK</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-val-wrap">
+                  <span class="sc-value" id="val-curr">4.6</span>
+                  <span class="sc-unit">A</span>
+                </div>
+                <div class="sc-limit">Limit: <span style="color:var(--color-curr)">10 A</span></div>
+              </div>
+              <div class="curr-gauge-box">
+                <svg class="curr-circle-svg" viewBox="0 0 42 42">
+                  <circle class="curr-circle-bg" cx="21" cy="21" r="15.915" fill="none" />
+                  <circle class="curr-circle-fill" id="currCircleFill" cx="21" cy="21" r="15.915" fill="none"
+                    stroke-dasharray="100" stroke-dashoffset="54" />
+                </svg>
+                <div class="curr-sub-stats">
+                  <div>Nominal: 5A</div>
+                  <div>Min: 0A</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- VOLTAGE (BLUE) -->
+            <div class="glass-card sensor-card card-theme-volt" onclick="openSensorModal('voltage')">
+              <div class="sc-header">
+                <span class="sc-title">Voltage</span>
+                <span class="sc-badge table-badge-ok" id="badge-volt">OK</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-val-wrap">
+                  <span class="sc-value" id="val-volt">230</span>
+                  <span class="sc-unit">V</span>
+                </div>
+                <div class="sc-limit">Limit: <span style="color:var(--color-volt)">≠ 230 V</span></div>
+              </div>
+              <svg class="volt-track-svg" viewBox="0 0 100 25">
+                <rect class="volt-track-bg" x="5" y="4" width="90" height="17" rx="8" fill="none" />
+                <rect class="volt-tracer-line" x="5" y="4" width="90" height="17" rx="8" fill="none" />
+              </svg>
+            </div>
+
+            <!-- VIBRATION (PURPLE) -->
+            <div class="glass-card sensor-card card-theme-vib" onclick="openSensorModal('vibration')">
+              <div class="sc-header">
+                <span class="sc-title">Vibration</span>
+                <span class="sc-badge table-badge-ok" id="badge-vib">OK</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-val-wrap">
+                  <span class="sc-value" id="val-vib">0.767</span>
+                  <span class="sc-unit">g</span>
+                </div>
+                <div class="sc-limit">Limit: <span style="color:var(--color-vib)">4 g</span></div>
+              </div>
+              <div class="vib-spectrogram">
+                <div class="vib-bar"></div>
+                <div class="vib-bar"></div>
+                <div class="vib-bar"></div>
+                <div class="vib-bar"></div>
+                <div class="vib-bar"></div>
+              </div>
+            </div>
+
+            <!-- PROXIMITY / RPM (GREEN) — spans full row -->
+            <div class="glass-card sensor-card card-theme-rpm card-rpm-full" onclick="openSensorModal('rpm')">
+              <div class="sc-header">
+                <span class="sc-title">Proximity / RPM</span>
+                <span class="sc-badge table-badge-ok" id="badge-prox">OK</span>
+              </div>
+              <div class="sc-body">
+                <div class="sc-val-wrap">
+                  <span class="sc-value" id="val-prox">1447</span>
+                  <span class="sc-unit">rpm</span>
+                </div>
+                <div class="sc-limit">Limit: <span style="color:var(--color-rpm)">1450 rpm</span></div>
+              </div>
+              <div class="rpm-slider-box">
+                <div class="rpm-segments">
+                  <div class="rpm-seg seg-safe"></div>
+                  <div class="rpm-seg seg-warn"></div>
+                  <div class="rpm-seg seg-danger"></div>
+                </div>
+                <div class="rpm-track-wrap">
+                  <div class="rpm-thumb-point" id="rpmSliderThumb" style="left: 60%;"></div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /sensor-section-grid -->
+        </div><!-- /section-block -->
+
+        <!-- ── SECTION 2: ML ANALYTICS ── -->
+        <div class="section-block">
+          <div class="section-label">
+            <span class="section-label-dot"
+              style="background: linear-gradient(135deg, var(--color-vib), var(--color-rpm));"></span>
+            ML Analytics
+          </div>
+          <div class="ml-section-grid">
+
+            <!-- ANOMALY DETECTION -->
+            <div class="glass-card diag-card state-ok" id="card-anomaly-detection" onclick="openSensorModal('anomaly')">
+              <div class="diag-header">
+                <span class="diag-title">Anomaly Detection</span>
+                <span class="diag-badge table-badge-ok" id="val-anomaly-status">NORMAL</span>
+              </div>
+              <div class="diag-body">
+                <div>
+                  <span class="diag-value" id="val-anomaly-score">0.12</span>
+                  <div class="diag-subtext">Anomaly Score</div>
+                </div>
+              </div>
+              <div class="diag-chart-container">
+                <canvas id="sparkline-anomaly"></canvas>
+              </div>
+            </div>
+
+            <!-- FAULT CLASSIFICATION -->
+            <div class="glass-card diag-card state-ok" id="card-fault-classification"
+              onclick="openSensorModal('fault')">
+              <div class="diag-header">
+                <span class="diag-title">Fault Classification</span>
+                <span class="diag-badge table-badge-ok" id="val-fault-type">HEALTHY</span>
+              </div>
+              <div class="diag-body">
+                <div>
+                  <span class="diag-value" id="val-confidence-score">98.0</span><span
+                    style="font-size: 1.1rem; font-weight:700; color: rgba(255,255,255,0.6); margin-left: 2px;">%</span>
+                  <div class="diag-subtext">Classification Confidence</div>
+                </div>
+              </div>
+              <div class="diag-chart-container">
+                <canvas id="sparkline-confidence"></canvas>
+              </div>
+            </div>
+
+            <!-- LIFESPAN ESTIMATION (RUL) -->
+            <div class="glass-card diag-card state-ok card-lifespan-full" id="card-lifespan-estimation"
+              onclick="openSensorModal('rul')">
+              <div class="diag-header">
+                <span class="diag-title">Lifespan Estimation</span>
+                <span class="diag-badge table-badge-ok" id="val-rul-status">HEALTHY</span>
+              </div>
+              <div class="rul-gauge-container">
+                <div class="rul-svg-wrap">
+                  <svg viewBox="0 0 42 42" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                    <circle class="rul-circle-bg" cx="21" cy="21" r="15.915" fill="none" stroke="rgba(255,255,255,0.05)"
+                      stroke-width="3" />
+                    <path class="rul-circle-fill" id="rulCircleFill"
+                      d="M21 5.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"
+                      stroke="var(--color-healthy)" stroke-width="3.5" stroke-dasharray="100, 100"
+                      stroke-linecap="round" />
+                  </svg>
+                  <div class="rul-pct-label" id="val-rul-pct">98%</div>
+                </div>
+                <div>
+                  <div style="font-size: 1.8rem; font-weight: 700;"><span id="val-predicted-rul">295</span> Hours</div>
+                  <div class="diag-subtext">Estimated Remaining Life</div>
+                </div>
+              </div>
+              <div
+                style="font-size: 0.95rem; color: rgba(255,255,255,0.3); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: auto;">
+                Operating duration: <span id="val-operating-hours" style="font-weight: 600; color: #ffffff;">0.0</span>
+                hours
+              </div>
+            </div>
+
+          </div><!-- /ml-section-grid -->
+        </div><!-- /section-block -->
+
+      </div><!-- /cards-column -->
+
+      <!-- RIGHT COLUMN: Sticky 3D floating motor centerpiece -->
+      <div class="motor-sticky-wrap">
+        <div class="motor-container">
+          <div class="motor-glow"></div>
+          <img src="/static/motor_png_1.png" class="motor-image" alt="Nirikshak Motor Centerpiece" />
+
+          <!-- Floating real-time boxes -->
+          <!-- <div class="motor-data-card motor-dc-temp">
+            <div class="motor-data-card-label">Temperature</div>
+            <div class="motor-data-card-value-wrap">
+              <span class="motor-data-card-value" id="motor-val-temp">0.0</span>
+              <span class="motor-data-card-unit">°C</span>
+            </div>
+            <div class="motor-data-card-badge">
+              <span class="motor-dot motor-dot-ok" id="motor-badge-temp-dot"></span>
+              <span id="motor-badge-temp-text" style="color: var(--color-healthy)">Normal</span>
+            </div>
+          </div> -->
+
+          <!-- <div class="motor-data-card motor-dc-vib">
+            <div class="motor-data-card-label">Vibration</div>
+            <div class="motor-data-card-value-wrap">
+              <span class="motor-data-card-value" id="motor-val-vib">0.000</span>
+              <span class="motor-data-card-unit">g</span>
+            </div>
+            <div class="motor-data-card-badge">
+              <span class="motor-dot motor-dot-ok" id="motor-badge-vib-dot"></span>
+              <span id="motor-badge-vib-text" style="color: var(--color-healthy)">Normal</span>
+            </div>
+          </div> -->
+
+          <!-- <div class="motor-data-card motor-dc-curr">
+            <div class="motor-data-card-label">Current</div>
+            <div class="motor-data-card-value-wrap">
+              <span class="motor-data-card-value" id="motor-val-curr">0.0</span>
+              <span class="motor-data-card-unit">A</span>
+            </div>
+            <div class="motor-data-card-badge">
+              <span class="motor-dot motor-dot-ok" id="motor-badge-curr-dot"></span>
+              <span id="motor-badge-curr-text" style="color: var(--color-healthy)">Normal</span>
+            </div>
+          </div> -->
+
+          <div class="motor-data-card motor-dc-status">
+            <div class="motor-data-card-label">Fault Confidence </div>
+            <div class="motor-data-card-value-wrap">
+              <span class="motor-data-card-value" id="motor-val-status">Healthy</span>
+            </div>
+            <div class="motor-data-card-badge">
+              <span class="motor-dot motor-dot-ok" id="motor-badge-status-dot"></span>
+              <span id="motor-badge-status-text" style="color: var(--color-healthy)">Normal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANOMALY DETECTION SCORE HISTORICAL CHART ── -->
+    <div class="glass-card dashboard-anomaly-chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">Anomaly Detection Index (Real-time Trend)</h3>
+        <span style="font-size:0.75rem; color:rgba(255,255,255,0.4)">Anomaly Threshold: 0.65</span>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="dashboardAnomalyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ── SYSTEM RECOMMENDED MAINTENANCE DRAWER ── -->
+    <div class="glass-card" style="border-color: rgba(0, 122, 255, 0.2)">
+      <div
+        style="font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+        <span>💡</span> Diagnostic Recommendation System
+      </div>
+      <div id="val-recommended-action" style="font-size: 0.88rem; color: rgba(255,255,255,0.8); line-height: 1.5;">
+        All sensors are currently within normal baseline limits. System normal.
+      </div>
+    </div>
+
+    <!-- ── HISTORY LOG FROM DATABASE ── -->
+    <div class="glass-card history-card">
+      <div class="history-header">
+        <span class="history-title" style="font-family:var(--font-display); font-weight:700;">Database Log
+          History</span>
+        <span class="history-count" id="logCount">0 records</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Temp (°C)</th>
+              <th>Vib (g)</th>
+              <th>Curr (A)</th>
+              <th>Volt (V)</th>
+              <th>RPM (rpm)</th>
+              <th>Anomaly</th>
+              <th>Fault Type</th>
+              <th>Lifespan %</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── SENSOR DETAIL POPUP OVERLAY ── -->
+  <div class="modal-overlay" id="sensorModal">
+    <div class="glass-card modal-content">
+      <button class="modal-close-btn" onclick="closeSensorModal()">✕</button>
+
+      <!-- LEFT: CURRENT PARAMETER DETAILS -->
+      <div class="modal-left">
+        <div class="m-header">
+          <span class="m-sublabel">Diagnostic Detail</span>
+          <h2 class="m-title" id="mSensorTitle">Temperature</h2>
+        </div>
+
+        <div class="m-val-box">
+          <div class="m-val-title">Current value</div>
+          <div>
+            <span class="m-value" id="mSensorValue">—</span>
+            <span class="m-unit" id="mSensorUnit">°C</span>
+          </div>
+          <span class="diag-badge" id="mSensorBadge" style="margin-top:0.5rem; display:inline-block;">OK</span>
+        </div>
+
+        <div class="m-stats-list">
+          <div class="m-stat-row">
+            <span class="m-stat-label">Configured Limit</span>
+            <span class="m-stat-val" id="mSensorLimit">—</span>
+          </div>
+          <div class="m-stat-row">
+            <span class="m-stat-label">Interval Mean</span>
+            <span class="m-stat-val" id="mSensorMean">—</span>
+          </div>
+          <div class="m-stat-row">
+            <span class="m-stat-label">Interval Peak</span>
+            <span class="m-stat-val" id="mSensorMax">—</span>
+          </div>
+          <div class="m-stat-row">
+            <span class="m-stat-label">Interval Min</span>
+            <span class="m-stat-val" id="mSensorMin">—</span>
+          </div>
+        </div>
+
+        <div class="m-action-box">
+          <div class="m-action-title">Inference Action</div>
+          <div class="m-action-desc" id="mSensorAction">No immediate maintenance action required.</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: TREND LINE CHART -->
+      <div class="modal-right">
+        <div class="m-chart-header">
+          <h3 class="m-chart-title" id="mChartTitle">Historical trend (last 40 samples)</h3>
+        </div>
+        <div class="m-chart-canvas-wrap">
+          <canvas id="modalChartCanvas"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // System operational limits
+    const LIMITS = {
+      temperature: 85.0,
+      vibration: 4.0,
+      current: 10.0,
+      voltage: 230.0,
+      proximity: 1450.0
+    };
+
+    // Global History tracking for modal statistics and dashboard charts
+    const sensorHistory = {
+      temperature: [],
+      vibration: [],
+      current: [],
+      voltage: [],
+      rpm: [],
+      anomalyScore: [],
+      confidenceScore: [],
+      rul: [],
+      timestamps: []
+    };
+
+    // Chart instances
+    let dashboardAnomalyChart = null;
+    let sparklineAnomaly = null;
+    let sparklineConfidence = null;
+    let modalChart = null;
+    let activeSensorKey = null;
+
+    // Helper to evaluate warnings/faults
+    function getState(val, lim, name) {
+      if (name === 'voltage') {
+        const dev = Math.abs(val - 230.0);
+        return dev > 8.0 ? 'fault' : dev > 2.0 ? 'warn' : 'ok';
+      }
+      const p = val / lim;
+      return p >= 1.0 ? 'fault' : p >= 0.85 ? 'warn' : 'ok';
+    }
+
+    // Initialize Dashboard Sparklines and Core Charts
+    if (typeof Chart !== 'undefined') {
+      Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+      Chart.defaults.color = "rgba(255,255,255,0.4)";
+
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        },
+        elements: {
+          point: { radius: 0 }
+        }
+      };
+
+      // Anomaly Score Sparkline
+      sparklineAnomaly = new Chart(document.getElementById('sparkline-anomaly'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ data: [], borderColor: 'var(--color-vib)', borderWidth: 1.5, fill: false }] },
+        options: chartOptions
+      });
+
+      // Classification Confidence Sparkline
+      sparklineConfidence = new Chart(document.getElementById('sparkline-confidence'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ data: [], borderColor: 'var(--color-healthy)', borderWidth: 1.5, fill: false }] },
+        options: chartOptions
+      });
+
+      // Large Dashboard Anomaly Detection Score Line Graph
+      dashboardAnomalyChart = new Chart(document.getElementById('dashboardAnomalyChart'), {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Anomaly Score Index',
+              data: [],
+              borderColor: 'var(--color-temp)',
+              backgroundColor: 'rgba(255, 59, 48, 0.05)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true,
+              pointRadius: 2
+            },
+            {
+              label: 'Anomaly Threshold (0.65)',
+              data: [],
+              borderColor: 'rgba(255, 59, 48, 0.4)',
+              borderDash: [5, 5],
+              borderWidth: 1.5,
+              fill: false,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleFont: { family: 'Space Grotesk' },
+              bodyFont: { family: 'Space Grotesk' },
+              borderColor: 'var(--glass-border)',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              ticks: { maxTicksLimit: 10, font: { size: 9 } }
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              min: 0,
+              max: 1.1,
+              ticks: { font: { size: 9 } }
+            }
+          }
+        }
+      });
+    }
+
+    // Modal Interaction
+    function openSensorModal(sensorKey) {
+      activeSensorKey = sensorKey;
+      const overlay = document.getElementById('sensorModal');
+      overlay.classList.add('active');
+      updateModalContent();
+    }
+
+    function closeSensorModal() {
+      const overlay = document.getElementById('sensorModal');
+      overlay.classList.remove('active');
+      activeSensorKey = null;
+      if (modalChart) {
+        modalChart.destroy();
+        modalChart = null;
+      }
+    }
+
+    function updateModalContent() {
+      if (!activeSensorKey) return;
+
+      const sensorNames = {
+        temperature: 'Temperature',
+        current: 'Current',
+        voltage: 'Voltage',
+        vibration: 'Vibration',
+        rpm: 'Proximity / RPM',
+        anomaly: 'Anomaly Detection',
+        fault: 'Fault Classification',
+        rul: 'Lifespan Estimation'
+      };
+
+      const sensorUnits = {
+        temperature: '°C',
+        current: 'A',
+        voltage: 'V',
+        vibration: 'g',
+        rpm: 'rpm',
+        anomaly: 'Score',
+        fault: '%',
+        rul: '%'
+      };
+
+      const sensorColors = {
+        temperature: 'var(--color-temp)',
+        current: 'var(--color-curr)',
+        voltage: 'var(--color-volt)',
+        vibration: 'var(--color-vib)',
+        rpm: 'var(--color-rpm)',
+        anomaly: 'var(--color-vib)',
+        fault: 'var(--color-healthy)',
+        rul: 'var(--color-healthy)'
+      };
+
+      const limitsDisplay = {
+        temperature: '> 85°C',
+        current: '> 10 A',
+        voltage: '≠ 230 V',
+        vibration: '> 4 g',
+        rpm: '> 1450 rpm',
+        anomaly: '< 0.65 Index',
+        fault: 'Healthy Baseline',
+        rul: '> 25%'
+      };
+
+      let historyArray;
+      if (activeSensorKey === 'rpm') historyArray = sensorHistory.rpm;
+      else if (activeSensorKey === 'anomaly') historyArray = sensorHistory.anomalyScore;
+      else if (activeSensorKey === 'fault') historyArray = sensorHistory.confidenceScore;
+      else historyArray = sensorHistory[activeSensorKey];
+
+      if (!historyArray || historyArray.length === 0) return;
+
+      const curVal = historyArray[historyArray.length - 1];
+      const name = sensorNames[activeSensorKey];
+      const unit = sensorUnits[activeSensorKey];
+      const color = sensorColors[activeSensorKey];
+
+      document.getElementById('mSensorTitle').textContent = name;
+      document.getElementById('mSensorValue').textContent = curVal.toFixed(
+        activeSensorKey === 'vibration' || activeSensorKey === 'anomaly' ? 3 :
+          (activeSensorKey === 'rpm' || activeSensorKey === 'voltage' || activeSensorKey === 'rul' || activeSensorKey === 'fault' ? 0 : 1)
+      );
+      document.getElementById('mSensorUnit').textContent = ' ' + unit;
+      document.getElementById('mSensorLimit').textContent = limitsDisplay[activeSensorKey];
+
+      // Calculate stats
+      const sum = historyArray.reduce((a, b) => a + b, 0);
+      const mean = sum / historyArray.length;
+      const min = Math.min(...historyArray);
+      const max = Math.max(...historyArray);
+
+      document.getElementById('mSensorMean').textContent = mean.toFixed(2) + ' ' + unit;
+      document.getElementById('mSensorMin').textContent = min.toFixed(2) + ' ' + unit;
+      document.getElementById('mSensorMax').textContent = max.toFixed(2) + ' ' + unit;
+
+      // Badging & Action description
+      const badge = document.getElementById('mSensorBadge');
+      const actionDesc = document.getElementById('mSensorAction');
+
+      badge.className = 'diag-badge';
+
+      if (activeSensorKey === 'anomaly') {
+        const isAnomaly = curVal >= 0.65;
+        if (isAnomaly) {
+          badge.classList.add('table-badge-fault');
+          badge.textContent = 'ANOMALY';
+          actionDesc.innerHTML = `Critical anomaly detected! Anomaly score of ${curVal.toFixed(3)} is above safety index 0.65.`;
+          actionDesc.parentElement.style.borderColor = 'rgba(255, 59, 48, 0.4)';
+        } else {
+          badge.classList.add('table-badge-ok');
+          badge.textContent = 'NORMAL';
+          actionDesc.innerHTML = `System running in normal baseline. Score is ${curVal.toFixed(3)}.`;
+          actionDesc.parentElement.style.borderColor = 'var(--glass-border)';
+        }
+      } else if (activeSensorKey === 'fault') {
+        const isFault = document.getElementById('val-fault-type').textContent !== 'HEALTHY';
+        if (isFault) {
+          badge.classList.add('table-badge-fault');
+          badge.textContent = 'FAULT';
+          actionDesc.innerHTML = `Identified: ${document.getElementById('val-fault-type').textContent} with ${curVal.toFixed(1)}% confidence.`;
+          actionDesc.parentElement.style.borderColor = 'rgba(255, 59, 48, 0.4)';
+        } else {
+          badge.classList.add('table-badge-ok');
+          badge.textContent = 'HEALTHY';
+          actionDesc.innerHTML = `Machine status is Healthy. Confidence: ${curVal.toFixed(1)}%.`;
+          actionDesc.parentElement.style.borderColor = 'var(--glass-border)';
+        }
+      } else if (activeSensorKey === 'rul') {
+        if (curVal < 25) {
+          badge.classList.add('table-badge-fault');
+          badge.textContent = 'CRITICAL';
+          actionDesc.innerHTML = `Lifespan remaining at ${curVal}%! Schedule immediate system overhaul/maintenance.`;
+          actionDesc.parentElement.style.borderColor = 'rgba(255, 59, 48, 0.4)';
+        } else if (curVal < 60) {
+          badge.classList.add('table-badge-warn');
+          badge.textContent = 'WARN';
+          actionDesc.innerHTML = `Remaining useful life at ${curVal}%. Maintenance advised within the next 20 operating hours.`;
+          actionDesc.parentElement.style.borderColor = 'rgba(255, 149, 0, 0.4)';
+        } else {
+          badge.classList.add('table-badge-ok');
+          badge.textContent = 'HEALTHY';
+          actionDesc.innerHTML = `Remaining machine lifespan estimation is optimal (${curVal}%).`;
+          actionDesc.parentElement.style.borderColor = 'var(--glass-border)';
+        }
+      } else {
+        const limit = activeSensorKey === 'rpm' ? LIMITS.proximity : LIMITS[activeSensorKey];
+        const state = getState(curVal, limit, activeSensorKey === 'rpm' ? 'proximity' : activeSensorKey);
+
+        if (state === 'fault') {
+          badge.classList.add('table-badge-fault');
+          badge.textContent = 'FAULT';
+          actionDesc.innerHTML = `Critical warning: ${name} is actively exceeding baseline limits. Schedule diagnostics immediately.`;
+          actionDesc.parentElement.style.borderColor = 'rgba(255, 59, 48, 0.4)';
+        } else if (state === 'warn') {
+          badge.classList.add('table-badge-warn');
+          badge.textContent = 'WARNING';
+          actionDesc.innerHTML = `Maintenance advisory: ${name} is approaching limits. Inspect machine load.`;
+          actionDesc.parentElement.style.borderColor = 'rgba(255, 149, 0, 0.4)';
+        } else {
+          badge.classList.add('table-badge-ok');
+          badge.textContent = 'OK';
+          actionDesc.innerHTML = `${name} is running normally within parameters.`;
+          actionDesc.parentElement.style.borderColor = 'var(--glass-border)';
+        }
+      }
+
+      // Draw Modal Chart
+      const ctx = document.getElementById('modalChartCanvas').getContext('2d');
+      if (modalChart) {
+        modalChart.destroy();
+      }
+
+      modalChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: sensorHistory.timestamps,
+          datasets: [{
+            label: name,
+            data: historyArray,
+            borderColor: color,
+            backgroundColor: color.replace(')', ', 0.05)'),
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { font: { size: 9 }, maxTicksLimit: 8 } },
+            y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
+
+    // Helper: Push and trim values to historical queues
+    function pushHistory(key, val, ts) {
+      sensorHistory[key].push(val);
+      if (sensorHistory[key].length > 40) {
+        sensorHistory[key].shift();
+      }
+    }
+
+    // Apply Live Pipeline Reading Data
+    function applyReading(d) {
+      if (!d || (!d.temperature && !d.voltage && !d.current)) return;
+
+      // Calculate and display latency (end-to-end: inference + transit)
+      if (d.ml_completed_timestamp) {
+        const now = Date.now();
+        const inferenceLatency = parseFloat(d.inference_latency || 0);
+        const transitLatency = Math.max(0, now - parseFloat(d.ml_completed_timestamp));
+        const totalLatency = inferenceLatency + transitLatency;
+
+        const latencyBadge = document.getElementById('latencyBadge');
+        const valLatency = document.getElementById('val-latency');
+        const valInfLatency = document.getElementById('val-inference-latency');
+
+        if (latencyBadge && valLatency) {
+          latencyBadge.style.display = 'inline-flex';
+          latencyBadge.style.alignItems = 'center';
+          latencyBadge.style.gap = '4px';
+          valLatency.textContent = totalLatency.toFixed(0);
+          if (valInfLatency) {
+            valInfLatency.textContent = inferenceLatency.toFixed(1);
+          }
+
+          // Performance indicators: green (<100ms), orange (<300ms), red (>=300ms)
+          if (totalLatency < 100) {
+            latencyBadge.style.background = 'rgba(52, 199, 89, 0.1)';
+            latencyBadge.style.color = 'var(--color-healthy)';
+            latencyBadge.style.borderColor = 'rgba(52, 199, 89, 0.3)';
+          } else if (totalLatency < 300) {
+            latencyBadge.style.background = 'rgba(255, 149, 0, 0.1)';
+            latencyBadge.style.color = 'var(--color-curr)';
+            latencyBadge.style.borderColor = 'rgba(255, 149, 0, 0.3)';
+          } else {
+            latencyBadge.style.background = 'rgba(255, 59, 48, 0.1)';
+            latencyBadge.style.color = 'var(--color-temp)';
+            latencyBadge.style.borderColor = 'rgba(255, 59, 48, 0.3)';
+          }
+        }
+      } else {
+        const latencyBadge = document.getElementById('latencyBadge');
+        if (latencyBadge) {
+          latencyBadge.style.display = 'none';
+        }
+      }
+
+      const ts = d.timestamp
+        ? (typeof d.timestamp === 'string' && d.timestamp.includes(' ') ? d.timestamp.split(' ')[1] : String(d.timestamp))
+        : new Date().toLocaleTimeString();
+
+      const temp = parseFloat(d.temperature || 0);
+      const curr = parseFloat(d.current || 0);
+      const volt = parseFloat(d.voltage || 0);
+      const vib = parseFloat(d.vibration || 0);
+      const prox = parseFloat(d.rpm || d.proximity || 0);
+      const prob = parseFloat(d.confidence_score !== undefined ? d.confidence_score : (d.probability || 0));
+      const mls = d.anomaly_status || d.status || 'Normal';
+
+      const anomalyStatus = d.anomaly_status || (mls === 'Fault' || prob >= 65 ? 'Anomaly' : 'Normal');
+      const anomalyScore = parseFloat(d.anomaly_score !== undefined ? d.anomaly_score : (anomalyStatus === 'Anomaly' ? 0.85 : 0.12));
+      const faultType = d.fault_type || (mls === 'Fault' ? 'Bearing Fault' : 'Healthy');
+      const confidenceScore = parseFloat(d.confidence_score !== undefined ? d.confidence_score : prob);
+      const predictedRul = parseFloat(d.predicted_rul !== undefined ? d.predicted_rul : 250.0);
+      const recommendedAction = d.recommended_action || (anomalyStatus === 'Anomaly' ? `Inspect machine: ${faultType} detected.` : 'Continue normal operations. Next check in 250 operating hours.');
+      const operatingHours = parseFloat(d.operating_hours || 0.0);
+
+      // Compute Lifespan remaining as %
+      const rulPct = Math.min(100, Math.max(0, Math.round((predictedRul / 300) * 100)));
+
+      // Save to history queues
+      sensorHistory.timestamps.push(ts);
+      if (sensorHistory.timestamps.length > 40) sensorHistory.timestamps.shift();
+
+      pushHistory('temperature', temp, ts);
+      pushHistory('current', curr, ts);
+      pushHistory('voltage', volt, ts);
+      pushHistory('vibration', vib, ts);
+      pushHistory('rpm', prox, ts);
+      pushHistory('anomalyScore', anomalyScore, ts);
+      pushHistory('confidenceScore', confidenceScore, ts);
+      pushHistory('rul', rulPct, ts);
+
+      // 1. Diagnostics Cards UI rendering
+      document.getElementById('val-anomaly-score').textContent = anomalyScore.toFixed(4);
+      const anBadge = document.getElementById('val-anomaly-status');
+      anBadge.textContent = anomalyStatus.toUpperCase();
+      anBadge.className = 'diag-badge ' + (anomalyStatus === 'Anomaly' ? 'table-badge-fault' : 'table-badge-ok');
+
+      const cardAnomaly = document.getElementById('card-anomaly-detection');
+      cardAnomaly.className = 'glass-card diag-card ' + (anomalyStatus === 'Anomaly' ? 'state-fault' : 'state-ok');
+
+      document.getElementById('val-confidence-score').textContent = confidenceScore.toFixed(1);
+      const fcBadge = document.getElementById('val-fault-type');
+      fcBadge.textContent = faultType.toUpperCase();
+      fcBadge.className = 'diag-badge ' + (faultType === 'Healthy' ? 'table-badge-ok' : 'table-badge-fault');
+
+      const cardFault = document.getElementById('card-fault-classification');
+      cardFault.className = 'glass-card diag-card ' + (faultType === 'Healthy' ? 'state-ok' : 'state-fault');
+
+      document.getElementById('val-predicted-rul').textContent = predictedRul.toFixed(0);
+      document.getElementById('val-operating-hours').textContent = operatingHours.toFixed(1);
+
+      document.getElementById('val-rul-pct').textContent = rulPct + '%';
+
+      const rulCircle = document.getElementById('rulCircleFill');
+      rulCircle.setAttribute('stroke-dasharray', `${rulPct}, 100`);
+
+      const rulBadge = document.getElementById('val-rul-status');
+      const cardLifespan = document.getElementById('card-lifespan-estimation');
+      if (rulPct < 25) {
+        rulBadge.textContent = 'CRITICAL';
+        rulBadge.className = 'diag-badge table-badge-fault';
+        rulCircle.setAttribute('stroke', 'var(--color-temp)');
+        cardLifespan.className = 'glass-card diag-card state-fault';
+      } else if (rulPct < 60) {
+        rulBadge.textContent = 'WARN';
+        rulBadge.className = 'diag-badge table-badge-warn';
+        rulCircle.setAttribute('stroke', 'var(--color-curr)');
+        cardLifespan.className = 'glass-card diag-card state-warn';
+      } else {
+        rulBadge.textContent = 'HEALTHY';
+        rulBadge.className = 'diag-badge table-badge-ok';
+        rulCircle.setAttribute('stroke', 'var(--color-healthy)');
+        cardLifespan.className = 'glass-card diag-card state-ok';
+      }
+
+      // 2. Sensor Cards Current Values
+      document.getElementById('val-temp').textContent = temp.toFixed(1);
+      document.getElementById('val-curr').textContent = curr.toFixed(1);
+      document.getElementById('val-volt').textContent = volt.toFixed(0);
+      document.getElementById('val-vib').textContent = vib.toFixed(3);
+      document.getElementById('val-prox').textContent = prox.toFixed(0);
+
+      // Badge status indicators for sensor cards
+      const applyBadgeState = (badgeId, val, lim, name) => {
+        const badge = document.getElementById(badgeId);
+        const st = getState(val, lim, name);
+        badge.className = 'sc-badge';
+        if (st === 'fault') { badge.classList.add('table-badge-fault'); badge.textContent = 'FAULT'; }
+        else if (st === 'warn') { badge.classList.add('table-badge-warn'); badge.textContent = 'WARN'; }
+        else { badge.classList.add('table-badge-ok'); badge.textContent = 'OK'; }
+      };
+
+      applyBadgeState('badge-temp', temp, LIMITS.temperature, 'temperature');
+      applyBadgeState('badge-curr', curr, LIMITS.current, 'current');
+      applyBadgeState('badge-volt', volt, LIMITS.voltage, 'voltage');
+      applyBadgeState('badge-vib', vib, LIMITS.vibration, 'vibration');
+      applyBadgeState('badge-prox', prox, LIMITS.proximity, 'proximity');
+
+      // Update Card Visual Micro-Animations
+      // A. Current Circle progress stroke-dashoffset
+      const currFill = document.getElementById('currCircleFill');
+      const currPct = Math.min(100, Math.max(0, (curr / LIMITS.current) * 100));
+      currFill.style.strokeDashoffset = (100 - currPct);
+
+      // B. RPM horizontal slider position
+      const rpmPct = Math.min(100, Math.max(0, (prox / LIMITS.proximity) * 100));
+      document.getElementById('rpmSliderThumb').style.left = `calc(${rpmPct}% - 5px)`;
+
+      // 3. Recommended actions panel
+      document.getElementById('val-recommended-action').textContent = recommendedAction;
+
+      // 4. Update Charts
+      if (sparklineAnomaly) {
+        sparklineAnomaly.data.labels = sensorHistory.timestamps;
+        sparklineAnomaly.data.datasets[0].data = sensorHistory.anomalyScore;
+        sparklineAnomaly.update('none');
+      }
+      if (sparklineConfidence) {
+        sparklineConfidence.data.labels = sensorHistory.timestamps;
+        sparklineConfidence.data.datasets[0].data = sensorHistory.confidenceScore;
+        sparklineConfidence.update('none');
+      }
+      if (dashboardAnomalyChart) {
+        dashboardAnomalyChart.data.labels = sensorHistory.timestamps;
+        dashboardAnomalyChart.data.datasets[0].data = sensorHistory.anomalyScore;
+        dashboardAnomalyChart.data.datasets[1].data = new Array(sensorHistory.timestamps.length).fill(0.65);
+        dashboardAnomalyChart.update('none');
+      }
+
+      // Update Popup Modal if active
+      if (activeSensorKey) {
+        updateModalContent();
+      }
+
+      // 5. Update Floating Cards around Motor Centerpiece
+      document.getElementById('motor-val-temp').textContent = temp.toFixed(1);
+      document.getElementById('motor-val-curr').textContent = curr.toFixed(1);
+      document.getElementById('motor-val-vib').textContent = vib.toFixed(3);
+
+      const motorValStatus = document.getElementById('motor-val-status');
+      const motorBadgeStatusDot = document.getElementById('motor-badge-status-dot');
+      const motorBadgeStatusText = document.getElementById('motor-badge-status-text');
+
+      if (faultType === 'Healthy') {
+        motorValStatus.textContent = `${confidenceScore.toFixed(0)}% Healthy`;
+        motorBadgeStatusDot.className = 'motor-dot motor-dot-ok';
+        motorBadgeStatusText.textContent = 'Healthy';
+        motorBadgeStatusText.style.color = 'var(--color-healthy)';
+      } else {
+        motorValStatus.textContent = `${confidenceScore.toFixed(0)}% ${faultType}`;
+        motorBadgeStatusDot.className = 'motor-dot motor-dot-danger';
+        motorBadgeStatusText.textContent = 'Fault';
+        motorBadgeStatusText.style.color = 'var(--color-temp)';
+      }
+
+      const updateMotorCardBadge = (dotId, textId, state) => {
+        const dot = document.getElementById(dotId);
+        const txt = document.getElementById(textId);
+        dot.className = 'motor-dot';
+        if (state === 'fault') {
+          dot.classList.add('motor-dot-danger');
+          txt.textContent = 'Alert';
+          txt.style.color = 'var(--color-temp)';
+        } else if (state === 'warn') {
+          dot.classList.add('motor-dot-warn');
+          txt.textContent = 'Warning';
+          txt.style.color = 'var(--color-curr)';
+        } else {
+          dot.classList.add('motor-dot-ok');
+          txt.textContent = 'Normal';
+          txt.style.color = 'var(--color-healthy)';
+        }
+      };
+
+      updateMotorCardBadge('motor-badge-temp-dot', 'motor-badge-temp-text', getState(temp, LIMITS.temperature, 'temperature'));
+      updateMotorCardBadge('motor-badge-curr-dot', 'motor-badge-curr-text', getState(curr, LIMITS.current, 'current'));
+      updateMotorCardBadge('motor-badge-vib-dot', 'motor-badge-vib-text', getState(vib, LIMITS.vibration, 'vibration'));
+
+      addLogRow(d, anomalyStatus, confidenceScore);
+    }
+
+    // ── LOG TABLE GENERATION ──
+    const logRows = [];
+    function addLogRow(r, status, prob) {
+      const anomalyStatus = r.anomaly_status || (status === 'Fault' || prob >= 65 ? 'Anomaly' : 'Normal');
+      const faultType = r.fault_type || (status === 'Fault' ? 'Bearing Fault' : 'Healthy');
+      const confidence = parseFloat(r.confidence_score !== undefined ? r.confidence_score : prob);
+      const rul = parseFloat(r.predicted_rul !== undefined ? r.predicted_rul : 250.0);
+      const ts = r.timestamp || new Date().toLocaleTimeString();
+
+      if (logRows.length > 0 && logRows[0].ts === ts) return;
+
+      const rulPct = Math.min(100, Math.max(0, Math.round((rul / 300) * 100)));
+      const anomalyBadge = anomalyStatus === 'Anomaly' ? 'table-badge-fault' : 'table-badge-ok';
+      const faultBadge = faultType === 'Healthy' ? 'table-badge-ok' : (faultType === 'Overheating' || faultType === 'Electrical Fault' ? 'table-badge-fault' : 'table-badge-warn');
+
+      logRows.unshift({
+        ts,
+        temp: parseFloat(r.temperature || 0).toFixed(1),
+        vib: parseFloat(r.vibration || 0).toFixed(3),
+        curr: parseFloat(r.current || 0).toFixed(1),
+        volt: parseFloat(r.voltage || 0).toFixed(0),
+        prox: parseFloat(r.rpm || r.proximity || 0).toFixed(0),
+        anomalyStatus, anomalyBadge,
+        faultType, confidence, faultBadge,
+        rulPct
+      });
+
+      if (logRows.length > 50) logRows.pop();
+
+      document.getElementById('logBody').innerHTML =
+        logRows.slice(0, 15).map(r => `
+          <tr>
+            <td>${r.ts}</td>
+            <td>${r.temp}</td>
+            <td>${r.vib}</td>
+            <td>${r.curr}</td>
+            <td>${r.volt}</td>
+            <td>${r.prox}</td>
+            <td><span class="table-badge ${r.anomalyBadge}">${r.anomalyStatus}</span></td>
+            <td><span class="table-badge ${r.faultBadge}">${r.faultType} (${r.confidence.toFixed(0)}%)</span></td>
+            <td style="font-weight:700; color:${r.rulPct < 25 ? 'var(--color-temp)' : (r.rulPct < 60 ? 'var(--color-curr)' : 'var(--color-healthy)')}">${r.rulPct}%</td>
+          </tr>
+        `).join('');
+      document.getElementById('logCount').textContent = logRows.length + ' records';
+    }
+
+    // Load static database logs on init
+    function loadHistory() {
+      fetch('/api/history').then(r => r.json()).then(rows => {
+        if (!rows.length) return;
+        logRows.length = 0;
+        rows.reverse().slice(0, 15).forEach(r => addLogRow(r, r.status || 'Normal', parseFloat(r.probability || r.confidence_score || 0)));
+        applyReading(rows[0]);
+      }).catch(() => { });
+    }
+
+    // Socket.io updates for MQTT/Firebase real-time values from backend
+    if (typeof io !== 'undefined') {
+      try {
+        const socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionAttempts: Infinity });
+        socket.on('connect', () => {
+          document.getElementById('connStatus').textContent = 'Connected';
+          document.getElementById('connStatus').className = 'conn-status conn-ok';
+          document.getElementById('dataSource').textContent = 'Live Ingestion';
+        });
+        socket.on('disconnect', () => {
+          document.getElementById('connStatus').textContent = 'Disconnected';
+          document.getElementById('connStatus').className = 'conn-status conn-err';
+        });
+        socket.on('sensor_update', data => applyReading(data));
+      } catch (err) {
+        console.warn('[SocketIO] Init error:', err);
+      }
+    }
+
+    loadHistory();
+    setInterval(loadHistory, 5000);
+  </script>
+</body>
+
+</html>

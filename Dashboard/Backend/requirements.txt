@@ -1,0 +1,21 @@
+# ── Web / API ───────────────────────────────────
+flask==3.0.3
+flask-socketio==5.3.6
+eventlet==0.36.1
+
+# ── MQTT ────────────────────────────────────────
+paho-mqtt==1.6.1
+
+# ── ML — Classical ──────────────────────────────
+scikit-learn==1.4.2
+xgboost==2.0.3
+joblib==1.4.2
+
+# ── ML — Deep Learning ──────────────────────────
+tensorflow==2.16.1          # includes Keras 3; autoencoder + LSTM
+# If you prefer lighter install (CPU-only):
+#   tensorflow-cpu==2.16.1
+
+# ── Data ────────────────────────────────────────
+pandas==2.2.2
+numpy==1.26.4
