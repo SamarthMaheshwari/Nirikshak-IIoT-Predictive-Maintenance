@@ -300,10 +300,21 @@ https://github.com/SamarthMaheshwari
 https://www.linkedin.com/in/samarth-maheshwari-709670259
 
 ---
+# Contributors
+
+This project was developed as a collaborative Final Year Engineering Project.
+
+- **Samarth Maheshwari**
+- **Shriraj Dongare**
+- **Anisha Pansare**
+
+---
 
 # Acknowledgements
 
-This project was developed as a Final Year Engineering Project to demonstrate an end-to-end Industrial IoT monitoring solution integrating embedded hardware, firmware, wireless communication, and real-time dashboard visualization.
+This project was developed as a collaborative Final Year Engineering Project.
+
+I would like to sincerely thank my teammates, **Shriraj Dongare** and **Anisha Pansare**, for their collaboration, dedication, and continuous support throughout the development of this project. Their teamwork and contributions were instrumental in successfully completing the project.
 
 ---
 
