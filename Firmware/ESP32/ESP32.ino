@@ -2,11 +2,11 @@
 #include <PubSubClient.h>
 
 /* ================= WiFi Credentials ================= */
-const char* ssid     = "OnePlus Nord 2T";
-const char* password = "123456789";
+const char* ssid     = "ssid_name";
+const char* password = "ssid_password";
 
 /* ================= MQTT Config ================= */
-const char* mqtt_server = "172.16.126.190";
+const char* mqtt_server = "laptop/pc_id";
 const int   mqtt_port   = 1883;
 const char* mqtt_topic  = "sensor/data";
 
