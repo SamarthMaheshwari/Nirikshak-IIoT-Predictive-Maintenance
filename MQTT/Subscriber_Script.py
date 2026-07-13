@@ -12,7 +12,7 @@ from datetime import datetime
 cred = credentials.Certificate("serviceAccountKey.json")
 
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://dht11-4ed11-default-rtdb.asia-southeast1.firebasedatabase.app/'
+    'databaseURL': 'firebase_database_URL'
 })
 
 firebase_ref = db.reference('sensor')
